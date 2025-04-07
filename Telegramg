@@ -1,0 +1,49 @@
+from telegram import InlineKeyboardButton, InlineKeyboardMarkup, Update
+from telegram.ext import Updater, CommandHandler, CallbackQueryHandler, MessageHandler, Filters, CallbackContext
+
+# Админ Telegram ID си (сизнинг ID’ingиз)
+ADMIN_ID = 308604655  
+
+# /start буйруғи
+def start(update: Update, context: CallbackContext):
+    keyboard = [
+        [InlineKeyboardButton("📩 Савол бериш", callback_data='ask_question')]
+    ]
+    reply_markup = InlineKeyboardMarkup(keyboard)
+    update.message.reply_text('Ассалому алайкум! Қуйидаги тугма орқали савол юборишингиз мумкин:', reply_markup=reply_markup)
+
+# Тугма босилганда
+def button_handler(update: Update, context: CallbackContext):
+    query = update.callback_query
+    query.answer()
+
+    if query.data == 'ask_question':
+        context.user_data['asking_question'] = True
+        query.message.reply_text("Илтимос, саволингизни ёзинг:")
+
+# Савол қабул қилиш
+def message_handler(update: Update, context: CallbackContext):
+    if context.user_data.get('asking_question'):
+        user_question = update.message.text
+        context.user_data['asking_question'] = False
+
+        # Админга юбориш
+        context.bot.send_message(chat_id=ADMIN_ID, text=f"🆕 Янги савол:\n\n{user_question}\n\n👤 Фойдаланувчи: @{update.message.from_user.username}")
+        update.message.reply_text("Саволингиз юборилди. Илтимос, жавобни кутиб туринг.")
+    else:
+        update.message.reply_text("Менга буйруқ беринг ёки 'Савол бериш' тугмасидан фойдаланинг.")
+
+# Ботни ишга тушириш
+def main():
+    updater = Updater("TOKEN", use_context=True)
+    dp = updater.dispatcher
+
+    dp.add_handler(CommandHandler("start", start))
+    dp.add_handler(CallbackQueryHandler(button_handler))
+    dp.add_handler(MessageHandler(Filters.text & ~Filters.command, message_handler))
+
+    updater.start_polling()
+    updater.idle()
+
+if __name__ == '__main__':
+    main()
